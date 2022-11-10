@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import { Replies } from "amqplib";
-import { API } from "revolt-api";
+import { rvAPI } from "../common/utils/rvAPI";
 import { Client } from "revolt.js";
 import WS from "ws";
 import { Deflate } from "zlib";
@@ -24,7 +24,7 @@ export interface WebSocket extends WS {
   member_events: Record<string, Function>;
   listen_options: any;
   rvClient: Client;
-  rvAPI: API;
+  rvAPI: rvAPI;
   rvAPIWrapper: APIWrapper;
   voiceInfo: {
     self_deaf: boolean,

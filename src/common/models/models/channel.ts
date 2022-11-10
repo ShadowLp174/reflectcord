@@ -1,4 +1,5 @@
 import { Channel as rvChannel } from "revolt-api";
+import { rvAPI } from "../../utils/rvAPI";
 import {
   APIChannel, APIOverwrite, ChannelType as discordChannelType, OverwriteType,
 } from "discord.js";
@@ -12,6 +13,7 @@ export type ChannelATQ = {};
 export type ChannelAFQ = Partial<{
   categoryId: string | null | undefined,
   excludedUser: string | null | undefined,
+  api: rvAPI | undefined
 }>;
 
 export const ChannelCreateType: QuarkConversion<"Text" | "Voice", discordChannelType> = {
@@ -89,6 +91,23 @@ export const ChannelType: QuarkConversion<rvChannel["channel_type"], discordChan
   },
 };
 
+function fetchCategory(channelId: string, target: string, api: rvAPI): Promise<string | null> {
+  return new Promise(async (res, _rej) => {
+    if (!api) return res(null);
+    const server = await api.getServer(target);
+    if (!server) return res(null);
+    if (!server.categories) return res(null);
+    server.categories?.forEach(category => {
+      const index = category.channels.findIndex(channel => channel == channelId);
+      if (index !== -1) {
+        console.log("found");
+        return res(category.id);
+      }
+    });
+    res(null);
+  });
+}
+
 export const Channel: QuarkConversion<rvChannel, APIChannel, ChannelATQ, ChannelAFQ> = {
   async to_quark(channel) {
     const { id, type } = channel;
@@ -149,6 +168,13 @@ export const Channel: QuarkConversion<rvChannel, APIChannel, ChannelATQ, Channel
 
     return {
       bitrate: undefined,
+      parent_id: await (async () => {
+        if (extra?.api && (channel.channel_type == "VoiceChannel" || channel.channel_type == "TextChannel")) {
+          return await fetchCategory(channel._id, channel.server, extra.api);
+        } else {
+          return null;
+        }
+      })(),
       guild_id: await (() => {
         if ("server" in channel && typeof channel.server === "string") {
           return toSnowflake(channel.server);

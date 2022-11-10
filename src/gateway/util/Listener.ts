@@ -62,13 +62,13 @@ export async function startListener(this: WebSocket, token: string) {
           await Promise.all(data.channels
             .map(async (channel) => this.rvAPIWrapper.channels.createObj({
               revolt: channel,
-              discord: await Channel.from_quark(channel, { excludedUser: currentUser._id }),
+              discord: await Channel.from_quark(channel, { excludedUser: currentUser._id, api: this.rvAPI }),
             })));
 
           const channels = (await Promise.all(data.channels
             .map(async (channel) => this.rvAPIWrapper.channels.createObj({
               revolt: channel,
-              discord: await Channel.from_quark(channel, { excludedUser: currentUser._id }),
+              discord: await Channel.from_quark(channel, { excludedUser: currentUser._id, api: this.rvAPI }),
             })))).filter((channel) => (
             channel.revolt.channel_type === "DirectMessage"
               || channel.revolt.channel_type === "Group"
@@ -81,7 +81,7 @@ export async function startListener(this: WebSocket, token: string) {
 
               const guild = {
                 ...await Guild.from_quark(server),
-                channels: await Promise.all(rvChannels.map((x) => Channel.from_quark(x))),
+                channels: await Promise.all(rvChannels.map((x) => Channel.from_quark(x, { api: this.rvAPI }))),
               };
 
               // Bots don't get sent full guilds in actual discord.
@@ -307,7 +307,7 @@ export async function startListener(this: WebSocket, token: string) {
         case "ChannelCreate": {
           const channel = this.rvAPIWrapper.channels.createObj({
             revolt: data,
-            discord: await Channel.from_quark(data),
+            discord: await Channel.from_quark(data, { api: this.rvAPI }),
           });
 
           await Send(this, {
@@ -326,7 +326,7 @@ export async function startListener(this: WebSocket, token: string) {
 
           if (!channel.revolt) return;
 
-          const channelDiscord = await Channel.from_quark(channel.revolt);
+          const channelDiscord = await Channel.from_quark(channel.revolt, { api: this.rvAPI });
           const updatedChannel = this.rvAPIWrapper.channels.$get(data.id, {
             revolt: {},
             discord: channelDiscord,
